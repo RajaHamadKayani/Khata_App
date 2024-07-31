@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:khata_app/data/database_helper_add_products.dart';
 import 'package:khata_app/views/widgets/add_users_dialog_box.dart';
-
 class UserKhataDetails extends StatefulWidget {
   final String customerName;
   final int customerId;
