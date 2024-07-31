@@ -18,6 +18,15 @@ class UserKhataDetails extends StatefulWidget {
 }
 
 class _UserKhataDetailsState extends State<UserKhataDetails> {
+    double totalAmount = 0.0; // Variable to store total amount
+     void _calculateTotalAmount() {
+    totalAmount = products.fold(0.0, (sum, item) {
+      double price = double.tryParse(item['price']) ?? 0.0;
+      double quantity = double.tryParse(item['quantity']) ?? 1.0;
+      return sum + (price * quantity);
+    });
+  }
+
   void _showDeleteProductDialog(int productId) {
     showDialog(
       context: context,
@@ -138,6 +147,8 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
         .getProductsByCustomer(widget.customerId);
     setState(() {
       products = productsInfo;
+            _calculateTotalAmount(); // Calculate total amount whenever products are fetched
+
     });
   }
 
@@ -251,7 +262,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Padding(
         padding: const EdgeInsets.all(16.0),
         child: FloatingActionButton(
@@ -542,7 +553,16 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                               ],
                             ),
                           );
-                        }))
+                        })),
+                           SizedBox(height: 10),
+            Text(
+              "Total Amount: ${totalAmount.toStringAsFixed(2)}pkr", // Display total amount
+              style: GoogleFonts.rubik(
+                color: Colors.black,
+                fontWeight: FontWeight.w300,
+                fontSize: 16,
+              ),
+            ),
           ],
         ),
       ),
