@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:khata_app/data/database_helper_add_products.dart';
 import 'package:khata_app/views/widgets/add_users_dialog_box.dart';
+
 class UserKhataDetails extends StatefulWidget {
   final String customerName;
   final int customerId;
@@ -18,8 +19,31 @@ class UserKhataDetails extends StatefulWidget {
 }
 
 class _UserKhataDetailsState extends State<UserKhataDetails> {
-    double totalAmount = 0.0; // Variable to store total amount
-     void _calculateTotalAmount() {
+  List<Map<String, dynamic>> filteredProducts = [];
+  TextEditingController searchController = TextEditingController();
+  @override
+  void dispose() {
+    searchController.removeListener(_onSearchChanged);
+    searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _filterProducts();
+  }
+
+  void _filterProducts() {
+    setState(() {
+      filteredProducts = products.where((product) {
+        return product['name']
+            .toLowerCase()
+            .contains(searchController.text.toLowerCase());
+      }).toList();
+    });
+  }
+
+  double totalAmount = 0.0; // Variable to store total amount
+  void _calculateTotalAmount() {
     totalAmount = products.fold(0.0, (sum, item) {
       double price = double.tryParse(item['price']) ?? 0.0;
       double quantity = double.tryParse(item['quantity']) ?? 1.0;
@@ -112,22 +136,53 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                     setState(() {
                       isLoading = true;
                     });
+                    double? quantity = double.tryParse(productQuantity.text);
+                    double? price = double.tryParse(productPrice.text);
+                    if (quantity == null || price == null) {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text(
+                              "Invalid Input",
+                              style:
+                                  GoogleFonts.rubik(color: Color(0xff5B40A7)),
+                            ),
+                            content: Text(
+                              "Quantity and Price should be numeric values.",
+                              style: GoogleFonts.rubik(color: Colors.black),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: Text("OK"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                      setState(() {
+                        isLoading = false;
+                      });
+                    } else {
+                      var updatedProduct = {
+                        'name': productName.text,
+                        'quantity': productQuantity.text,
+                        'price': productPrice.text,
+                        'customer_id': widget.customerId,
+                      };
 
-                    var updatedProduct = {
-                      'name': productName.text,
-                      'quantity': productQuantity.text,
-                      'price': productPrice.text,
-                      'customer_id': widget.customerId,
-                    };
+                      await DatabaseHelperAddProducts()
+                          .updateProduct(product["id"], updatedProduct);
+                      _fetchProductsInfo();
+                      Navigator.pop(context);
 
-                    await DatabaseHelperAddProducts()
-                        .updateProduct(product["id"], updatedProduct);
-                    _fetchProductsInfo();
-                    Navigator.pop(context);
-
-                    setState(() {
-                      isLoading = false;
-                    });
+                      setState(() {
+                        isLoading = false;
+                      });
+                    }
                   },
                   child: Text("Update",
                       style: GoogleFonts.rubik(color: Color(0xff5B40A7))),
@@ -142,13 +197,13 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
 
   List<Map<String, dynamic>> products = [];
 
-  Future<void> _fetchProductsInfo() async {
+  void _fetchProductsInfo() async {
     List<Map<String, dynamic>> productsInfo = await DatabaseHelperAddProducts()
         .getProductsByCustomer(widget.customerId);
     setState(() {
       products = productsInfo;
-            _calculateTotalAmount(); // Calculate total amount whenever products are fetched
-
+      filteredProducts = products; // Initially display all products
+      _calculateTotalAmount(); // Calculate total amount
     });
   }
 
@@ -156,6 +211,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
   void initState() {
     super.initState();
     _fetchProductsInfo();
+    searchController.addListener(_onSearchChanged);
   }
 
   Future<void> deleteAllProducts() async {
@@ -221,20 +277,58 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                       isLoading = true;
                     });
 
-                    var product = {
-                      'name': productName.text,
-                      'quantity': productQuantity.text,
-                      'price': productPrice.text,
-                      'customer_id':
-                          widget.customerId, // Associate product with customer
-                    };
-                    await DatabaseHelperAddProducts().saveProduct(product);
-                    _fetchProductsInfo();
-                    Navigator.pop(context);
+                    String quantityText = productQuantity.text;
+                    String priceText = productPrice.text;
 
-                    setState(() {
-                      isLoading = false;
-                    });
+                    // Validate if quantity and price are numeric
+                    double? quantity = double.tryParse(quantityText);
+                    double? price = double.tryParse(priceText);
+
+                    if (quantity == null || price == null) {
+                      // Show error dialog if the input is not valid
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text(
+                              "Invalid Input",
+                              style:
+                                  GoogleFonts.rubik(color: Color(0xff5B40A7)),
+                            ),
+                            content: Text(
+                              "Quantity and Price should be numeric values.",
+                              style: GoogleFonts.rubik(color: Colors.black),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: Text("OK"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                      setState(() {
+                        isLoading = false;
+                      });
+                    } else {
+                      var product = {
+                        'name': productName.text,
+                        'quantity': quantityText,
+                        'price': priceText,
+                        'customer_id': widget
+                            .customerId, // Associate product with customer
+                      };
+                      await DatabaseHelperAddProducts().saveProduct(product);
+                      _fetchProductsInfo();
+                      Navigator.pop(context);
+
+                      setState(() {
+                        isLoading = false;
+                      });
+                    }
                   },
                   child: Container(
                     decoration: BoxDecoration(
@@ -388,7 +482,20 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
             const SizedBox(
               height: 10,
             ),
-            products.isEmpty
+            TextField(
+              controller: searchController,
+              style: GoogleFonts.rubik(color: Colors.black),
+              decoration: InputDecoration(
+                labelText: "Search Product",
+                hintStyle: GoogleFonts.rubik(color: Colors.black),
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+            filteredProducts.isEmpty
                 ? Center(
                     child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -402,12 +509,12 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                   ))
                 : Expanded(
                     child: ListView.builder(
-                        itemCount: products.length,
+                        itemCount: filteredProducts.length,
                         shrinkWrap: true,
                         physics: const BouncingScrollPhysics(),
                         scrollDirection: Axis.vertical,
                         itemBuilder: (context, index) {
-                          final product = products[index];
+                          final product = filteredProducts[index];
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 6.0),
                             child: Column(
@@ -554,7 +661,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                             ),
                           );
                         })),
-                           SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(
               "Total Amount: ${totalAmount.toStringAsFixed(2)}pkr", // Display total amount
               style: GoogleFonts.rubik(
