@@ -19,12 +19,129 @@ class UserKhataDetails extends StatefulWidget {
 }
 
 class _UserKhataDetailsState extends State<UserKhataDetails> {
+  double paidAmount = 0.0;
+
+  TextEditingController amountController = TextEditingController();
+
+  void _showEditTotalAmountDialog() {
+    double updatedAmount = totalAmount;
+    final TextEditingController amountController =
+        TextEditingController(text: updatedAmount.toStringAsFixed(2));
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Edit Total Amount"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                  "Current Total Amount: ${totalAmount.toStringAsFixed(2)} PKR"),
+              TextField(
+                controller: amountController,
+                style: GoogleFonts.rubik(color: Colors.black),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: "Total Amount"),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildArithmeticButton(
+                      "+", amountController, (a, b) => a + b),
+                  _buildArithmeticButton("-", amountController, (a, b) {
+                    paidAmount += b;
+                    return a - b;
+                  }),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildArithmeticButton(
+                      "*", amountController, (a, b) => a * b),
+                  _buildArithmeticButton(
+                      "/", amountController, (a, b) => b != 0 ? a / b : a),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text("OK"),
+              onPressed: () {
+                setState(() {
+                  totalAmount =
+                      double.tryParse(amountController.text) ?? totalAmount;
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildArithmeticButton(String symbol, TextEditingController controller,
+      double Function(double, double) operation) {
+    return ElevatedButton(
+      onPressed: () {
+        double currentValue = double.tryParse(controller.text) ?? 0.0;
+        // Allow user to input the second value for arithmetic operation
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            TextEditingController inputController = TextEditingController();
+            return AlertDialog(
+              title: Text("Enter value for $symbol operation"),
+              content: TextField(
+                style: GoogleFonts.rubik(color: Colors.black),
+                controller: inputController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: "Value"),
+              ),
+              actions: [
+                TextButton(
+                  child: Text("Cancel"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: Text("OK"),
+                  onPressed: () {
+                    double inputValue =
+                        double.tryParse(inputController.text) ?? 0.0;
+                    if (inputValue != 0.0) {
+                      double result = operation(currentValue, inputValue);
+                      controller.text = result.toStringAsFixed(2);
+                    }
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+      child: Text(symbol),
+    );
+  }
+
   List<Map<String, dynamic>> filteredProducts = [];
   TextEditingController searchController = TextEditingController();
   @override
   void dispose() {
     searchController.removeListener(_onSearchChanged);
     searchController.dispose();
+    amountController.dispose();
     super.dispose();
   }
 
@@ -515,97 +632,30 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                         scrollDirection: Axis.vertical,
                         itemBuilder: (context, index) {
                           final product = filteredProducts[index];
+                          double price =
+                              double.tryParse(product["price"]) ?? 0.0;
+                          double quantity =
+                              double.tryParse(product["quantity"]) ?? 0.0;
+                          double itemTotal = price * quantity;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 6.0),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.start,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      flex: 1,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          border:
-                                              Border.all(color: Colors.black),
-                                          color: Colors.grey[300],
-                                        ),
-                                        child: Padding(
-                                          padding: EdgeInsets.all(2),
-                                          child: Center(
-                                            child: Text(
-                                              product["id"].toString(),
-                                              style: GoogleFonts.rubik(
-                                                  color: Colors.black),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          border:
-                                              Border.all(color: Colors.black),
-                                          color: Colors.grey[300],
-                                        ),
-                                        child: Padding(
-                                          padding: EdgeInsets.all(2),
-                                          child: Center(
-                                            child: Text(
-                                              product["name"],
-                                              style: GoogleFonts.rubik(
-                                                  color: Colors.black),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          border:
-                                              Border.all(color: Colors.black),
-                                          color: Colors.grey[300],
-                                        ),
-                                        child: Padding(
-                                          padding: EdgeInsets.all(2),
-                                          child: Center(
-                                            child: Text(
-                                              product["quantity"],
-                                              style: GoogleFonts.rubik(
-                                                  color: Colors.black),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          border:
-                                              Border.all(color: Colors.black),
-                                          color: Colors.grey[300],
-                                        ),
-                                        child: Padding(
-                                          padding: EdgeInsets.all(2),
-                                          child: Center(
-                                            child: Text(
-                                              product["price"],
-                                              style: GoogleFonts.rubik(
-                                                  color: Colors.black),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      _buildDetailBox(
+                                          product["id"].toString(), 50),
+                                      _buildDetailBox(product["name"], 100),
+                                      _buildDetailBox(product["quantity"], 50),
+                                      _buildDetailBox(product["price"], 100),
+                                      _buildDetailBox(
+                                          itemTotal.toStringAsFixed(2), 100),
+                                    ],
+                                  ),
                                 ),
                                 const SizedBox(
                                   height: 5,
@@ -662,8 +712,19 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                           );
                         })),
             SizedBox(height: 10),
+            GestureDetector(
+              onTap: _showEditTotalAmountDialog,
+              child: Text(
+                "Total Amount: ${totalAmount.toStringAsFixed(2)} PKR",
+                style: GoogleFonts.rubik(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w300,
+                  fontSize: 16,
+                ),
+              ),
+            ),
             Text(
-              "Total Amount: ${totalAmount.toStringAsFixed(2)}pkr", // Display total amount
+              "Paid Amount: ${paidAmount.toStringAsFixed(2)} PKR",
               style: GoogleFonts.rubik(
                 color: Colors.black,
                 fontWeight: FontWeight.w300,
@@ -675,4 +736,24 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
       ),
     );
   }
+}
+
+Widget _buildDetailBox(String content, double width) {
+  return Container(
+    width: width, // Set a fixed width for each box
+    decoration: BoxDecoration(
+      border: Border.all(color: Colors.black),
+      color: Colors.grey[300],
+    ),
+    child: Padding(
+      padding: EdgeInsets.all(2),
+      child: Center(
+        child: Text(
+          content,
+          style: GoogleFonts.rubik(color: Colors.black),
+          overflow: TextOverflow.ellipsis, // Ensure text doesn't overflow
+        ),
+      ),
+    ),
+  );
 }
