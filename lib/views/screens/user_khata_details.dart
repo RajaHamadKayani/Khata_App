@@ -1,5 +1,8 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:khata_app/data/database_helper_add_products.dart';
 import 'package:khata_app/views/widgets/add_users_dialog_box.dart';
@@ -22,7 +25,6 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
   double paidAmount = 0.0;
 
   TextEditingController amountController = TextEditingController();
-
   void _showEditTotalAmountDialog() {
     double updatedAmount = totalAmount;
     final TextEditingController amountController =
@@ -32,49 +34,68 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Edit Total Amount"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                  "Current Total Amount: ${totalAmount.toStringAsFixed(2)} PKR"),
-              TextField(
-                controller: amountController,
-                style: GoogleFonts.rubik(color: Colors.black),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: "Total Amount"),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          title: const Text(
+            "Edit Total Amount",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8, // Responsive width
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment:
+                    CrossAxisAlignment.stretch, // Make the column stretch
                 children: [
-                  _buildArithmeticButton(
-                      "+", amountController, (a, b) => a + b),
-                  _buildArithmeticButton("-", amountController, (a, b) {
-                    paidAmount += b;
-                    return a - b;
-                  }),
+                  Text(
+                    "Current Total Amount: \$${totalAmount.toStringAsFixed(2)} PKR",
+                    style: GoogleFonts.rubik(color: Colors.black54),
+                  ),
+                  SizedBox(height: 16), // Added spacing
+                  TextField(
+                    controller: amountController,
+                    style: GoogleFonts.rubik(color: Colors.black),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: "Total Amount",
+                      border: OutlineInputBorder(), // Added border
+                    ),
+                  ),
+                  SizedBox(height: 16), // Added spacing
+                  Wrap(
+                    spacing: 8, // Spacing between buttons
+                    runSpacing: 8, // Spacing between rows
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildArithmeticButton(
+                          "+", amountController, (a, b) => a + b),
+                      _buildArithmeticButton("-", amountController, (a, b) {
+                        if (a - b < 0) {
+                          // Handle negative values or show an error
+                          return a; // Prevent negative amounts
+                        }
+                        paidAmount += b;
+                        return a - b;
+                      }),
+                      _buildArithmeticButton(
+                          "*", amountController, (a, b) => a * b),
+                      _buildArithmeticButton(
+                          "/", amountController, (a, b) => b != 0 ? a / b : a),
+                    ],
+                  ),
                 ],
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildArithmeticButton(
-                      "*", amountController, (a, b) => a * b),
-                  _buildArithmeticButton(
-                      "/", amountController, (a, b) => b != 0 ? a / b : a),
-                ],
-              ),
-            ],
+            ),
           ),
           actions: [
             TextButton(
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text("OK"),
+              child: const Text("OK"),
               onPressed: () {
                 setState(() {
                   totalAmount =
@@ -86,6 +107,21 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildArithmeticButtonn(
+      String operator,
+      TextEditingController amountController,
+      double Function(double a, double b) operation) {
+    return ElevatedButton(
+      onPressed: () {
+        double currentAmount = double.tryParse(amountController.text) ?? 0.0;
+        double adjustmentAmount = 10.0; // Example adjustment amount
+        amountController.text =
+            operation(currentAmount, adjustmentAmount).toStringAsFixed(2);
+      },
+      child: Text(operator),
     );
   }
 
@@ -104,18 +140,19 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
               content: TextField(
                 style: GoogleFonts.rubik(color: Colors.black),
                 controller: inputController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: "Value"),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: "Value"),
               ),
               actions: [
                 TextButton(
-                  child: Text("Cancel"),
+                  child: const Text("Cancel"),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
                 ),
                 TextButton(
-                  child: Text("OK"),
+                  child: const Text("OK"),
                   onPressed: () {
                     double inputValue =
                         double.tryParse(inputController.text) ?? 0.0;
@@ -174,14 +211,14 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("Delete Product",
-              style: GoogleFonts.rubik(color: Color(0xff5B40A7))),
-          content: Text("Are you sure you want to delete this product?"),
+              style: GoogleFonts.rubik(color: const Color(0xff5B40A7))),
+          content: const Text("Are you sure you want to delete this product?"),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
             ),
             TextButton(
               onPressed: () async {
@@ -190,7 +227,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                 Navigator.pop(context);
               },
               child: Text("Delete",
-                  style: GoogleFonts.rubik(color: Color(0xff5B40A7))),
+                  style: GoogleFonts.rubik(color: const Color(0xff5B40A7))),
             ),
           ],
         );
@@ -213,31 +250,33 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
           builder: (context, setState) {
             return AlertDialog(
               title: Text("Update Product",
-                  style: GoogleFonts.rubik(color: Color(0xff5B40A7))),
+                  style: GoogleFonts.rubik(color: const Color(0xff5B40A7))),
               content: SingleChildScrollView(
                 child: Column(
                   children: [
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     TextField(
                       controller: productName,
                       style: GoogleFonts.rubik(color: Colors.black),
-                      decoration: InputDecoration(labelText: "Product Name"),
+                      decoration:
+                          const InputDecoration(labelText: "Product Name"),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: productQuantity,
                       style: GoogleFonts.rubik(color: Colors.black),
                       decoration:
-                          InputDecoration(labelText: "Product Quantity"),
+                          const InputDecoration(labelText: "Product Quantity"),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: productPrice,
                       style: GoogleFonts.rubik(color: Colors.black),
-                      decoration: InputDecoration(labelText: "Product Price"),
+                      decoration:
+                          const InputDecoration(labelText: "Product Price"),
                     ),
-                    if (isLoading) SizedBox(height: 16),
-                    if (isLoading) CircularProgressIndicator(),
+                    if (isLoading) const SizedBox(height: 16),
+                    if (isLoading) const CircularProgressIndicator(),
                   ],
                 ),
               ),
@@ -246,7 +285,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: Text("Cancel"),
+                  child: const Text("Cancel"),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -262,8 +301,8 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                           return AlertDialog(
                             title: Text(
                               "Invalid Input",
-                              style:
-                                  GoogleFonts.rubik(color: Color(0xff5B40A7)),
+                              style: GoogleFonts.rubik(
+                                  color: const Color(0xff5B40A7)),
                             ),
                             content: Text(
                               "Quantity and Price should be numeric values.",
@@ -274,7 +313,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                                 onPressed: () {
                                   Navigator.pop(context);
                                 },
-                                child: Text("OK"),
+                                child: const Text("OK"),
                               ),
                             ],
                           );
@@ -302,7 +341,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                     }
                   },
                   child: Text("Update",
-                      style: GoogleFonts.rubik(color: Color(0xff5B40A7))),
+                      style: GoogleFonts.rubik(color: const Color(0xff5B40A7))),
                 ),
               ],
             );
@@ -354,30 +393,31 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
             return AlertDialog(
               title: Text(
                 "Add Product",
-                style: GoogleFonts.rubik(color: Color(0xff5B40A7)),
+                style: GoogleFonts.rubik(color: const Color(0xff5B40A7)),
               ),
               content: SingleChildScrollView(
                 child: Column(
                   children: [
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     TextField(
                         controller: productName,
                         style: GoogleFonts.rubik(color: Colors.black),
-                        decoration: InputDecoration(labelText: "Product Name")),
-                    SizedBox(height: 8),
+                        decoration:
+                            const InputDecoration(labelText: "Product Name")),
+                    const SizedBox(height: 8),
                     TextField(
                         controller: productQuantity,
                         style: GoogleFonts.rubik(color: Colors.black),
-                        decoration:
-                            InputDecoration(labelText: "Product Quantity")),
-                    SizedBox(height: 8),
+                        decoration: const InputDecoration(
+                            labelText: "Product Quantity")),
+                    const SizedBox(height: 8),
                     TextField(
                         controller: productPrice,
                         style: GoogleFonts.rubik(color: Colors.black),
                         decoration:
-                            InputDecoration(labelText: "Product Price")),
-                    if (isLoading) SizedBox(height: 16),
-                    if (isLoading) CircularProgressIndicator(),
+                            const InputDecoration(labelText: "Product Price")),
+                    if (isLoading) const SizedBox(height: 16),
+                    if (isLoading) const CircularProgressIndicator(),
                   ],
                 ),
               ),
@@ -386,7 +426,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: Text("Cancel"),
+                  child: const Text("Cancel"),
                 ),
                 InkWell(
                   onTap: () async {
@@ -409,8 +449,8 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                           return AlertDialog(
                             title: Text(
                               "Invalid Input",
-                              style:
-                                  GoogleFonts.rubik(color: Color(0xff5B40A7)),
+                              style: GoogleFonts.rubik(
+                                  color: const Color(0xff5B40A7)),
                             ),
                             content: Text(
                               "Quantity and Price should be numeric values.",
@@ -421,7 +461,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                                 onPressed: () {
                                   Navigator.pop(context);
                                 },
-                                child: Text("OK"),
+                                child: const Text("OK"),
                               ),
                             ],
                           );
@@ -449,10 +489,10 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                        color: Color(0xff5B40A7),
+                        color: const Color(0xff5B40A7),
                         borderRadius: BorderRadius.circular(12)),
                     child: Padding(
-                      padding: EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(20),
                       child: Center(
                         child: Text(
                           "Add Product",
@@ -477,11 +517,11 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.all(16.0),
         child: FloatingActionButton(
-          backgroundColor: Color(0xff5B40A7),
+          backgroundColor: const Color(0xff5B40A7),
           onPressed: () {
             _showAddProductDialog();
           },
-          child: Icon(
+          child: const Icon(
             Icons.add,
             color: Colors.white,
           ),
@@ -492,7 +532,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: Icon(
+            icon: const Icon(
               Icons.arrow_back,
               color: Colors.white,
             )),
@@ -516,7 +556,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
             },
           ),
         ],
-        backgroundColor: Color(0xff5B40A7),
+        backgroundColor: const Color(0xff5B40A7),
         title: Text(
           widget.customerName,
           style: GoogleFonts.rubik(color: Colors.white),
@@ -524,11 +564,116 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
         centerTitle: true,
       ),
       body: Padding(
-        padding: EdgeInsets.all(8),
+        padding: const EdgeInsets.all(8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Card(
+              color: Color.fromARGB(246, 242, 243, 245),
+              child: Container(
+                  height: 80.h,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(17),
+                    gradient: LinearGradient(colors: [
+                      Color.fromARGB(76, 204, 217, 240),
+                      Color.fromARGB(125, 201, 213, 233)
+                    ]),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const CircleAvatar(
+                        backgroundColor: Color.fromARGB(255, 250, 252, 253),
+                        child: Icon(
+                          Icons.wallet_membership_outlined,
+                          color: Color.fromARGB(129, 24, 53, 0),
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          GestureDetector(
+                            onTap: _showEditTotalAmountDialog,
+                            child: Text(
+                              "\$${totalAmount.toStringAsFixed(2)}", // Added dollar sign
+                              style: GoogleFonts.rubik(
+                                color: Colors.black,
+                                fontWeight: FontWeight
+                                    .w500, // Adjusted font weight for emphasis
+                                fontSize:
+                                    16, // Increased font size for better readability
+                              ),
+                            ),
+                          ),
+                          const SizedBox(
+                              height:
+                                  4), // Added spacing between amount and label
+                          const Text(
+                            "Total Amount",
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 94, 109, 141),
+                              fontWeight: FontWeight.bold,
+                              fontSize:
+                                  14, // Adjusted font size for consistency
+                            ),
+                          ),
+                        ],
+                      ),
+                      const CircleAvatar(
+                        backgroundColor: Color.fromARGB(255, 250, 252, 253),
+                        child: Icon(
+                          Icons.monetization_on,
+                          color: Color.fromARGB(129, 24, 53, 0),
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "\$${paidAmount.toStringAsFixed(2)}", // Added dollar sign
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 1, 109, 5),
+                              fontWeight: FontWeight.bold,
+                              fontSize:
+                                  16, // Increased font size for better readability
+                            ),
+                          ),
+                          const SizedBox(
+                              height:
+                                  4), // Added spacing between amount and label
+                          const Text(
+                            "Paid Amount",
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 94, 109, 141),
+                              fontWeight: FontWeight.bold,
+                              fontSize:
+                                  14, // Adjusted font size for consistency
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )),
+            ),
+            SizedBox(
+              height: 10.h,
+            ),
+            TextField(
+              controller: searchController,
+              style: GoogleFonts.rubik(color: Colors.black),
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.all(6),
+                labelText: "Search Product",
+                hintStyle: GoogleFonts.rubik(color: Colors.black),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.search),
+              ),
+            ),
+            const SizedBox(
+              height: 10,
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,12 +681,17 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                        color: Color(0xff5FE2FF),
-                        borderRadius: BorderRadius.circular(8)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      color: const Color.fromARGB(
+                          131, 95, 226, 255), // Very low opacity
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(8.0),
                       child: Center(
-                        child: Text("S No"),
+                        child: Text(
+                          "S No",
+                          style: TextStyle(color: Color.fromARGB(129, 0, 0, 0)),
+                        ),
                       ),
                     ),
                   ),
@@ -552,12 +702,16 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                        color: Color(0xff5FE2FF),
-                        borderRadius: BorderRadius.circular(8)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      color: const Color.fromARGB(
+                          131, 95, 226, 255), // Very low opacity
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(8.0),
                       child: Center(
-                        child: Text("P-Name"),
+                        child: Text("P-Name",
+                            style:
+                                TextStyle(color: Color.fromARGB(129, 0, 0, 0))),
                       ),
                     ),
                   ),
@@ -568,12 +722,16 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                        color: Color(0xff5FE2FF),
-                        borderRadius: BorderRadius.circular(8)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      color: const Color.fromARGB(
+                          131, 95, 226, 255), // Very low opacity
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(8.0),
                       child: Center(
-                        child: Text("Quantity"),
+                        child: Text("Quantity",
+                            style:
+                                TextStyle(color: Color.fromARGB(129, 0, 0, 0))),
                       ),
                     ),
                   ),
@@ -584,12 +742,16 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                        color: Color(0xff5FE2FF),
-                        borderRadius: BorderRadius.circular(8)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      color: const Color.fromARGB(
+                          131, 95, 226, 255), // Very low opacity
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(8.0),
                       child: Center(
-                        child: Text("Price"),
+                        child: Text("Price",
+                            style:
+                                TextStyle(color: Color.fromARGB(129, 0, 0, 0))),
                       ),
                     ),
                   ),
@@ -597,20 +759,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
               ],
             ),
             const SizedBox(
-              height: 10,
-            ),
-            TextField(
-              controller: searchController,
-              style: GoogleFonts.rubik(color: Colors.black),
-              decoration: InputDecoration(
-                labelText: "Search Product",
-                hintStyle: GoogleFonts.rubik(color: Colors.black),
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.search),
-              ),
-            ),
-            const SizedBox(
-              height: 10,
+              width: 3,
             ),
             filteredProducts.isEmpty
                 ? Center(
@@ -671,11 +820,11 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                                         onTap: () =>
                                             _showUpdateProductDialog(product),
                                         child: Container(
-                                          decoration: BoxDecoration(
+                                          decoration: const BoxDecoration(
                                             color: Color(0xff5B40A7),
                                           ),
                                           child: Padding(
-                                            padding: EdgeInsets.all(4),
+                                            padding: const EdgeInsets.all(4),
                                             child: Center(
                                               child: Text("Update",
                                                   style: GoogleFonts.rubik(
@@ -691,11 +840,11 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                                         onTap: () => _showDeleteProductDialog(
                                             product["id"]),
                                         child: Container(
-                                          decoration: BoxDecoration(
+                                          decoration: const BoxDecoration(
                                             color: Color(0xff5B40A7),
                                           ),
                                           child: Padding(
-                                            padding: EdgeInsets.all(4),
+                                            padding: const EdgeInsets.all(4),
                                             child: Center(
                                               child: Text("Delete",
                                                   style: GoogleFonts.rubik(
@@ -711,26 +860,7 @@ class _UserKhataDetailsState extends State<UserKhataDetails> {
                             ),
                           );
                         })),
-            SizedBox(height: 10),
-            GestureDetector(
-              onTap: _showEditTotalAmountDialog,
-              child: Text(
-                "Total Amount: ${totalAmount.toStringAsFixed(2)} PKR",
-                style: GoogleFonts.rubik(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w300,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-            Text(
-              "Paid Amount: ${paidAmount.toStringAsFixed(2)} PKR",
-              style: GoogleFonts.rubik(
-                color: Colors.black,
-                fontWeight: FontWeight.w300,
-                fontSize: 16,
-              ),
-            ),
+            const SizedBox(height: 10),
           ],
         ),
       ),
@@ -746,7 +876,7 @@ Widget _buildDetailBox(String content, double width) {
       color: Colors.grey[300],
     ),
     child: Padding(
-      padding: EdgeInsets.all(2),
+      padding: const EdgeInsets.all(2),
       child: Center(
         child: Text(
           content,
@@ -757,3 +887,26 @@ Widget _buildDetailBox(String content, double width) {
     ),
   );
 }
+
+
+
+
+//  GestureDetector(
+//               onTap: _showEditTotalAmountDialog,
+//               child: Text(
+//                 "Total Amount: ${totalAmount.toStringAsFixed(2)} PKR",
+//                 style: GoogleFonts.rubik(
+//                   color: Colors.black,
+//                   fontWeight: FontWeight.w300,
+//                   fontSize: 16,
+//                 ),
+//               ),
+//             ),
+//             Text(
+//               "Paid Amount: ${paidAmount.toStringAsFixed(2)} PKR",
+//               style: GoogleFonts.rubik(
+//                 color: Colors.black,
+//                 fontWeight: FontWeight.w300,
+//                 fontSize: 16,
+//               ),
+//             ),
